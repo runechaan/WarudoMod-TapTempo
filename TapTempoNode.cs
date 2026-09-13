@@ -21,7 +21,7 @@ namespace Rune.TapTempo {
     [NodeType(
         Id = "29e003b4-e647-4a70-85ca-d3789a92cf55",
         Title = "Tap Tempo",
-        Category = "RUNEMODS")]
+        Category = "RUNE.MODS")]
     public class TapTempoNode : Node {
 
         // 平均を取る直近タップ数。BPM 計算には最低 2 件必要

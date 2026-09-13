@@ -14,7 +14,7 @@ A Warudo plugin mod that adds a **Tap Tempo** node for measuring BPM from tap ev
 
 ### ノード仕様
 
-ノードパレットのカテゴリ「RUNEMODS」に「Tap Tempo」として表示されます。
+ノードパレットのカテゴリ「RUNE.MODS」に「Tap Tempo」として表示されます。
 
 | 種別 | 名前 | 説明 |
 |---|---|---|
@@ -43,7 +43,7 @@ Connect any event node (e.g. a keyboard button) to `Tap` and tap along with the 
 
 ### Node reference
 
-The node appears as **Tap Tempo** under the **RUNEMODS** category.
+The node appears as **Tap Tempo** under the **RUNE.MODS** category.
 
 | Kind | Name | Description |
 |---|---|---|

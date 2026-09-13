@@ -1,4 +1,4 @@
-# WarudoTapTempo
+# WarudoMod-TapTempo
 
 Warudo のブループリントにタップテンポ(BPM 計測)ノードを追加するプラグイン MOD です。
 
@@ -34,7 +34,7 @@ A Warudo plugin mod that adds a **Tap Tempo** node for measuring BPM from tap ev
 - このリポジトリを Unity プロジェクトの `Assets/MOD/TapTempoNode` にジャンクション(または直接クローン)して、uMod Exporter で `.warudo` にビルドします。
 
 ```
-mklink /J "<Modding Project>\Assets\MOD\TapTempoNode" "<clone path>\WarudoTapTempo"
+mklink /J "<Modding Project>\Assets\MOD\TapTempoNode" "<clone path>\WarudoMod-TapTempo"
 ```
 
 - `.meta` ファイルは GUID を保つため追跡しています。

@@ -1,8 +1,8 @@
 # WarudoMod-TapTempo
 
-Warudo のブループリントにタップテンポ(BPM 計測)ノードを追加するプラグイン MOD のソースコードです。
+Warudo のブループリントにタップテンポ(BPM 計測)ノードを追加するプラグイン MOD です。
 
-Source code of a Warudo plugin mod that adds a **Tap Tempo** node for measuring BPM from tap events in the blueprint.
+A Warudo plugin mod that adds a **Tap Tempo** node for measuring BPM from tap events in the blueprint.
 
 ---
 
@@ -11,10 +11,6 @@ Source code of a Warudo plugin mod that adds a **Tap Tempo** node for measuring 
 ### 概要
 
 キーボードボタンなどのイベントノードを `Tap` に接続し、拍に合わせてタップすると、直近のタップ間隔の平均から BPM を計算して出力します。
-
-### 入手方法
-
-ビルド済みの MOD は Steam Workshop で配布します。このリポジトリはソースコードの保存と公開を目的としています。
 
 ### ノード仕様
 
@@ -44,10 +40,6 @@ Source code of a Warudo plugin mod that adds a **Tap Tempo** node for measuring 
 ### Overview
 
 Connect any event node (e.g. a keyboard button) to `Tap` and tap along with the beat. The node averages the most recent tap intervals and outputs the BPM.
-
-### Getting the mod
-
-The built mod is distributed via Steam Workshop. This repository exists to store and share the source code.
 
 ### Node reference
 

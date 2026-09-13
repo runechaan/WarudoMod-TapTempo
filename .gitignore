@@ -1,0 +1,7 @@
+# OS / editor noise
+Thumbs.db
+.DS_Store
+*.swp
+
+# Unity の .meta は追跡します（Unity プロジェクト内へジャンクションで配置するため GUID を保持する）
+# Unity .meta files ARE tracked: this folder is junctioned into a Unity project, so GUIDs must stay stable.

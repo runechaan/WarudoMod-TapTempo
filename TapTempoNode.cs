@@ -3,12 +3,20 @@
 //
 // タップテンポ(BPM計測)ノード。
 // Tap フロー入力にキーボードボタン等のイベントノードを接続し、拍に合わせて
-// タップすると、直近のタップ間隔の平均から BPM を計算して出力します。
+// タップすると、直近のタップ時刻から BPM を計算して出力します。
 //
 // - 1回目のタップは BPM が確定しないため FirstTap へ分岐
 // - 2回目以降は BPM を更新して Exit へ分岐
 // - ResetThreshold 秒以上タップが途切れると、次のタップから新しい列として扱う
 // - Reset フロー入力で手動リセット
+//
+// BPM の計算:
+//   直近のタップ時刻に最小二乗法で直線を当てはめ、その傾きを 1 拍の長さとする。
+//   最初と最後の 2 点だけを使う方法より、途中のタップも使う分だけ揺れに強い。
+//
+// 整数出力のヒステリシス:
+//   Round To Integer が ON のとき、表示中の整数から RoundHysteresis + 0.5 以上
+//   離れたときだけ値を切り替える。x.5 付近で 119 と 120 を行き来するのを防ぐ。
 // =============================================================================
 
 using System.Collections.Generic;
@@ -24,8 +32,11 @@ namespace Rune.TapTempo {
         Category = "RUNE.MODS")]
     public class TapTempoNode : Node {
 
-        // 平均を取る直近タップ数。BPM 計算には最低 2 件必要
+        // BPM 計算には最低 2 件のタップが必要
         private const int MinSamples = 2;
+
+        // 整数出力を切り替えるまでの余裕。表示中の整数から 0.5 + この値だけ離れたら切り替える
+        private const float RoundHysteresis = 0.3f;
 
         /* DATA INPUTS */
 
@@ -45,14 +56,17 @@ namespace Rune.TapTempo {
 
         /* INTERNAL STATE */
 
-        private readonly List<float> _tapTimes = new List<float>();
+        // 長時間起動しても精度が落ちないよう、タップ時刻は double で保持する
+        private readonly List<double> _tapTimes = new List<double>();
         private float _bpm;
+        private float _roundedBpm;
+        private bool _hasRoundedBpm;
 
         /* DATA OUTPUTS */
 
         [DataOutput]
         [Label("BPM")]
-        public float BPM() => RoundToInteger ? Mathf.Round(_bpm) : _bpm;
+        public float BPM() => RoundToInteger ? _roundedBpm : _bpm;
 
         [DataOutput]
         [Label("Tap Count")]
@@ -63,11 +77,12 @@ namespace Rune.TapTempo {
         // このポートにキーボードボタンなど任意のイベントノードを接続してタップさせる
         [FlowInput]
         public Continuation Tap() {
-            float now = Time.unscaledTime;
+            double now = Time.unscaledTimeAsDouble;
 
             // 間隔が空きすぎていたら、新しいタップ列として扱う
             if (_tapTimes.Count > 0 && now - _tapTimes[_tapTimes.Count - 1] > ResetThreshold) {
                 _tapTimes.Clear();
+                _hasRoundedBpm = false; // 新しい列では整数出力もすぐ追従させる
             }
 
             _tapTimes.Add(now);
@@ -78,16 +93,17 @@ namespace Rune.TapTempo {
                 _tapTimes.RemoveAt(0);
             }
 
-            // タップが 2 回以上たまったら、直近の平均間隔から BPM を計算
-            if (_tapTimes.Count >= MinSamples) {
-                float totalInterval = _tapTimes[_tapTimes.Count - 1] - _tapTimes[0];
-                float averageInterval = totalInterval / (_tapTimes.Count - 1);
-                _bpm = 60f / averageInterval;
-                return Exit;
+            // 1 回目のタップは BPM を計算できないので、別の出力に流す
+            if (_tapTimes.Count < MinSamples) {
+                return FirstTap;
             }
 
-            // 1 回目のタップは BPM を計算できないので、別の出力に流す
-            return FirstTap;
+            double beat = EstimateBeatLength();
+            if (beat > 0.0) {
+                _bpm = (float) (60.0 / beat);
+                UpdateRoundedBpm();
+            }
+            return Exit;
         }
 
         // タップ列を手動でリセットしたいときに使う
@@ -95,6 +111,8 @@ namespace Rune.TapTempo {
         public Continuation Reset() {
             _tapTimes.Clear();
             _bpm = 0f;
+            _roundedBpm = 0f;
+            _hasRoundedBpm = false;
             return null;
         }
 
@@ -106,5 +124,37 @@ namespace Rune.TapTempo {
         [FlowOutput]
         [Label("First Tap")]
         public Continuation FirstTap; // 1 回目のタップのとき発火（まだ BPM 未確定）
+
+        /* CALCULATION */
+
+        // タップ番号 i と時刻 t に最小二乗法で直線 t = a + b*i を当てはめ、傾き b（1 拍の秒数）を返す。
+        // タップが 2 件のときは、単純な間隔と同じ値になる。
+        private double EstimateBeatLength() {
+            int n = _tapTimes.Count;
+            double meanIndex = (n - 1) * 0.5;
+
+            double meanTime = 0.0;
+            for (int i = 0; i < n; i++) {
+                meanTime += _tapTimes[i];
+            }
+            meanTime /= n;
+
+            double covariance = 0.0;
+            double variance = 0.0;
+            for (int i = 0; i < n; i++) {
+                double dx = i - meanIndex;
+                covariance += dx * (_tapTimes[i] - meanTime);
+                variance += dx * dx;
+            }
+            return covariance / variance;
+        }
+
+        // 整数出力を更新する。表示中の値から十分離れたときだけ切り替える
+        private void UpdateRoundedBpm() {
+            if (!_hasRoundedBpm || Mathf.Abs(_bpm - _roundedBpm) > 0.5f + RoundHysteresis) {
+                _roundedBpm = Mathf.Round(_bpm);
+                _hasRoundedBpm = true;
+            }
+        }
     }
 }
